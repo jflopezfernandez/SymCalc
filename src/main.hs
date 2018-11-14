@@ -100,6 +100,15 @@ data Tree = SumNode Operator Tree Tree
 
 data Expression
 
+expression :: [Token] -> (Tree, [Token])
+expression = undefined
+
+term :: [Token] -> (Tree, [Token])
+term = undefined
+
+factor :: [Token] -> (Tree, [Token])
+factor = undefined
+
 parse :: [Token] -> Expression
 parse = undefined
 
