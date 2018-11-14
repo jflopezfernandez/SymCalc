@@ -6,8 +6,12 @@ data Operator = Plus | Minus | Times | Div
 
 data Token = TokenOperator Operator 
             | TokenIdentifier String 
-            | TokenNumber Int
+            | TokenNumber Double
             | TokenSpace
+            | TokenAssign
+            | TokenLeftParen
+            | TokenRightParen
+            | TokenEnd
         deriving (Show, Eq)
 
 operator :: Char -> Operator
@@ -17,18 +21,55 @@ operator c | c == '+'  = Plus
            | c == '/'  = Div
            | otherwise = error "Other operator"
 
-tokenize :: String -> [Token]
-tokenize = map tokenizeChar
+-- Cannot function on tokens comprised of multiple digits
+-- tokenize :: String -> [Token]
+-- tokenize = map tokenizeChar
 
-tokenizeChar :: Char -> Token
-tokenizeChar c | elem c "+-*/" = TokenOperator (operator c)
-               | isDigit c     = TokenNumber (digitToInt c)
-               | isAlpha c     = TokenIdentifier [c]
-               | isSpace c     = TokenSpace
-               | otherwise     = error $ "Cannot tokenize " ++ [c]
+tokenize :: String -> [Token]
+tokenize [] = []
+tokenize (c : cs) 
+    | elem c "+-*/" = TokenOperator (operator c)    : tokenize cs
+    | c == '='      = TokenAssign                   : tokenize cs
+    | c == '('      = TokenLeftParen                : tokenize cs
+    | c == ')'      = TokenRightParen               : tokenize cs
+    | isDigit c     = number c cs
+    | isAlpha c     = identifier c cs
+    | isSpace c     =                                 tokenize cs
+    | otherwise     =                                 error $ "Cannot tokenize " ++ [c]
                
 deSpace :: [Token] -> [Token]
 deSpace = filter (\t -> t /= TokenSpace)
+
+alnums :: String -> (String, String)
+alnums str = als "" str
+    where
+        als acc [] = (acc, [])
+        als acc (c : cs) | isAlphaNum c =
+                                let (acc', cs') = als acc cs
+                                in (c:acc', cs')
+                         | otherwise = (acc, c:cs)
+
+identifier :: Char -> String -> [Token]
+identifier c cs = let (str, cs') = span isAlphaNum cs in
+                    TokenIdentifier (c : str) : tokenize cs'
+
+-- Function: digits
+-- Description: This function is the equivalent of alnums, except that it
+-- gathers digits, rather than alphanumeric characters.
+digits :: String -> (String, String)
+digits str = digs "" str
+    where
+        digs :: String -> String -> (String, String)
+        digs acc [] = (acc, [])
+        digs acc (c : cs) | isDigit c =
+                                let (acc', cs') = digs acc cs
+                                in (c:acc', cs')
+                          | otherwise = (acc, c:cs)
+
+number :: Char -> String -> [Token]
+number c cs = 
+    let (digs, cs') = span isDigit cs in
+        TokenNumber (read (c : digs)) : tokenize cs'
 
 opToString :: Operator -> String
 opToString Plus = "+"
@@ -41,9 +82,21 @@ showTokenContent (TokenOperator op) = opToString op
 showTokenContent (TokenIdentifier str) = str
 showTokenContent (TokenNumber i) = show i
 showTokenContent (TokenSpace) = " "
+showTokenContent (TokenAssign) = "="
+showTokenContent (TokenLeftParen) = "("
+showTokenContent (TokenRightParen) = ")"
+showTokenContent (TokenEnd) = ""
 
 token :: Token
 token = TokenIdentifier "x"
+
+data Tree = SumNode Operator Tree Tree
+          | ProductNode Operator Tree Tree
+          | AssignmentNode String Tree
+          | UnaryNode Operator Tree
+          | NumberNode Double
+          | VariableNode String
+        deriving Show
 
 data Expression
 
@@ -57,4 +110,8 @@ evaluate = undefined
 main :: IO ()
 main = do
     print $ tokenize " 1 + 4 / x"
+    putStrLn ""
     print $ tokenize "2+2+2*x+1"
+    putStrLn ""
+    print $ tokenize "12 + 24 / x1"
+    putStrLn ""
