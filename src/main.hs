@@ -3,11 +3,28 @@ import System.Environment
 import Data.Char
 
 
-fib :: (Integral a) => a -> a
-fib 0 = 1
-fib 1 = 1
-fib x = fib (x - 1) + fib (x - 2)
+data Operator = Plus | Minus | Times | Div
+        deriving (Show, Eq)
+
+operatorToString :: Operator -> String
+operatorToString Plus = "+"
+operatorToString Minus = "-"
+operatorToString Times = "*"
+operatorToString Div = "/"
+
+data Token = TokenOperator Operator
+           | TokenIdentifier String
+           | TokenNumber Int
+        deriving (Show, Eq)
+
+showContent :: Token -> String
+showContent (TokenOperator op) = operatorToString
+showContent (TokenIdentifier str) = operatorToString
+showContent (TokenNumber i) = show i
 
 main :: IO ()
 main = do
-    print $ fib 15
+    print $ operatorToCharacter Plus
+    print $ operatorToCharacter Minus
+    print $ operatorToCharacter Times
+    print $ operatorToCharacter Div
