@@ -18,12 +18,8 @@ loop symbolTable = do
     else
         let toks = tokenize str
             tree = parse toks
-            Ev ev = evaluate tree symbolTable
-        in
-            case ev of
-                Left msg -> do
-                    putStrLn $ "Error: " ++ msg
-                    loop symbolTable -- Use old symbol table
-                Right (v, symbolTable') -> do
-                    print v
-                    loop symbolTable'
+            Ev act = evaluate tree
+            (val, symbolTable') = act symbolTable
+        in do
+            print val
+            loop symbolTable'

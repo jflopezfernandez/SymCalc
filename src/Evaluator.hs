@@ -9,66 +9,66 @@ import qualified Data.Map as DataMap
 
 type SymbolTable = DataMap.Map String Double
 
-newtype Evaluator a = Ev (Either String a)
+newtype Evaluator a = Ev (SymbolTable -> (a, SymbolTable))
 
 instance Monad Evaluator where
-    (Ev ev) >>= k =
-        case ev of
-            Left msg -> Ev (Left msg)
-            Right v -> k v
-    --return v = Ev (Right v)
-    fail msg = Ev (Left msg)
+    (Ev act) >>= k = Ev $
+        \symbolTable ->
+            let (x, symbolTable') = act symbolTable
+                (Ev act') = k x
+            in act' symbolTable'
+    return x = Ev (\symbolTable -> (x, symbolTable))
+    
 
 instance Functor Evaluator where
     fmap = liftM
 
 instance Applicative Evaluator where
-    pure v = Ev (Right v)
-    (<*>) = ap
+    --pure x = Ev (\symbolTable -> (x, symbolTable))
+    --pure x = Ev (\symbolTable -> (x, symbolTable))
+    pure = return
+    (<*>)  = ap
 
+evaluate :: Tree -> Evaluator Double
 
-evaluate :: Tree -> SymbolTable -> Evaluator (Double, SymbolTable)
-
-evaluate (SumNode op left right) symbolTable = do
-    (lft, symbolTable')  <- evaluate left symbolTable
-    (rgt, symbolTable'') <- evaluate right symbolTable'
+evaluate (SumNode op left right) = do
+    lft <- evaluate left
+    rgt <- evaluate right
     
     case op of
-        Plus ->  return (lft + rgt, symbolTable'') -- was return
-        Minus -> return (lft - rgt, symbolTable'') -- was return
+        Plus ->  return $ lft + rgt
+        Minus -> return $ lft - rgt
 
 
-evaluate (NumberNode x) symbolTable = return (x, symbolTable)
+evaluate (NumberNode x) = return x
     
-evaluate (ProductNode op left right) symbolTable = do
-    (lft, symbolTable')  <- evaluate left symbolTable
-    (rgt, symbolTable'') <- evaluate right symbolTable'
+evaluate (ProductNode op left right) = do
+    lft  <- evaluate left
+    rgt  <- evaluate right
     case op of
-        Times -> return (lft * rgt, symbolTable)
-        Div   -> return (lft / rgt, symbolTable)
+        Times -> return $ lft * rgt
+        Div   -> return $ lft / rgt
 
-evaluate (UnaryNode op tree) symbolTable = do
-    (x, symbolTable') <- evaluate tree symbolTable
+evaluate (UnaryNode op tree) = do
+    x <- evaluate tree
     case op of
-        Plus ->  return ( x, symbolTable')
-        Minus -> return (-x, symbolTable')
+        Plus  -> return  x
+        Minus -> return (-x)
 
-evaluate (AssignmentNode str tree) symbolTable = do
-    (v, symbolTable')  <- evaluate tree symbolTable
-    (_, symbolTable'') <- addSymbol str v symbolTable'
-    return (v, symbolTable'')
+evaluate (AssignmentNode str tree) = do
+    v  <- evaluate tree
+    addSymbol str v
 
-
-evaluate (VariableNode str) symbolTable = lookUp str symbolTable
+evaluate (VariableNode str) = lookUp str
 
 
-lookUp :: String -> SymbolTable -> Evaluator (Double, SymbolTable)
-lookUp str symbolTable =
+lookUp :: String -> Evaluator Double
+lookUp str = Ev $ \symbolTable -> 
     case DataMap.lookup str symbolTable of
-        Just v -> return (v, symbolTable)
-        Nothing -> fail ("Undefined variable " ++ str)
+        Just v -> (v, symbolTable)
+        Nothing -> error $ "Undefined variable " ++ str
 
-addSymbol :: String -> Double -> SymbolTable -> Evaluator ((), SymbolTable)
-addSymbol str val symbolTable =
+addSymbol :: String -> Double -> Evaluator Double
+addSymbol str val = Ev $ \symbolTable ->
     let symbolTable' = DataMap.insert str val symbolTable
-    in return ((), symbolTable')
+    in (val, symbolTable')
