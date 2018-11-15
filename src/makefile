@@ -1,7 +1,7 @@
 
 CC := ghc
 
-CFLAGS := -O
+CFLAGS := -g -Werror 
 
 all: calc.exe
 
