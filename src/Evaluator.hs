@@ -24,8 +24,6 @@ instance Functor Evaluator where
     fmap = liftM
 
 instance Applicative Evaluator where
-    --pure x = Ev (\symbolTable -> (x, symbolTable))
-    --pure x = Ev (\symbolTable -> (x, symbolTable))
     pure = return
     (<*>)  = ap
 
