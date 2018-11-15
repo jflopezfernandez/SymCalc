@@ -9,7 +9,7 @@ import Evaluator --(evaluate)
 
 
 main = do
-    loop (DataMap.fromList [("pi", pi)])
+    loop (DataMap.fromList [("pi", pi), ("e", exp 1.0)])
 
 loop symbolTable = do
     str <- getLine
@@ -18,7 +18,12 @@ loop symbolTable = do
     else
         let toks = tokenize str
             tree = parse toks
-            (val, symbolTable') = evaluate tree symbolTable
-        in do
-            print val
-            loop symbolTable'
+            Ev ev = evaluate tree symbolTable
+        in
+            case ev of
+                Left msg -> do
+                    putStrLn $ "Error: " ++ msg
+                    loop symbolTable -- Use old symbol table
+                Right (v, symbolTable') -> do
+                    print v
+                    loop symbolTable'
