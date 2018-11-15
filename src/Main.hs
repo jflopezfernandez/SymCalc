@@ -1,14 +1,15 @@
 
 module Main where
 
-import qualified Data.Map
-import Lexer (tokenize)
-import Parser (parse)
-import Evaluator (evaluate)
+import qualified Data.Map as DataMap
+
+import Lexer --(tokenize)
+import Parser --(parse)
+import Evaluator --(evaluate)
 
 
 main = do
-    loop (Data.Map.fromList [("pi", pi)])
+    loop (DataMap.fromList [("pi", pi)])
 
 loop symbolTable = do
     str <- getLine
@@ -19,5 +20,5 @@ loop symbolTable = do
             tree = parse toks
             (val, symbolTable') = evaluate tree symbolTable
         in do
-            --print val
+            print val
             loop symbolTable'

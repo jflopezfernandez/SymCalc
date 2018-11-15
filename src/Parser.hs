@@ -4,11 +4,11 @@ module Parser (Tree(..), parse) where
 import Lexer
 
 data Tree = SumNode Operator Tree Tree
-            | ProductNode Operator Tree Tree
-            | AssignmentNode String Tree
-            | UnaryNode Operator Tree
-            | NumberNode Double
-            | VariableNode String
+          | ProductNode Operator Tree Tree
+          | AssignmentNode String Tree
+          | UnaryNode Operator Tree
+          | NumberNode Double
+          | VariableNode String
         deriving Show
 
 parse :: [Token] -> Tree
