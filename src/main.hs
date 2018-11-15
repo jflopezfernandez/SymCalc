@@ -98,29 +98,83 @@ data Tree = SumNode Operator Tree Tree
           | VariableNode String
         deriving Show
 
-data Expression
+-- These two functions, lookAhead and accept, are helpers for accessing tokens.
+-- Traditionally, we'd want to look one token ahead, and when we want to use the
+-- token, we call accept to remove it from the list, although technically
+-- speaking, we're just returning the tail of the list.
+
+lookAhead :: [Token] -> Token
+lookAhead [] = TokenEnd
+lookAhead (c : _) = c
+
+accept :: [Token] -> [Token]
+accept [] = error "Nothing to accept"
+accept (_:ts) = ts
 
 expression :: [Token] -> (Tree, [Token])
-expression = undefined
+expression toks =
+    let (termTree, toks') = term toks
+    in
+        case lookAhead toks' of
+            -- Term [+-] Expression
+            (TokenOperator op) | elem op [Plus, Minus] ->
+                let (exTree, toks'') = expression (accept toks')
+                in (SumNode op termTree exTree, toks'')
+            -- Identifier '=' Expression
+            TokenAssign ->
+                case termTree of
+                    VariableNode str ->
+                        let (exTree, toks'') = expression (accept toks')
+                        in (AssignmentNode str exTree, toks'')
+                    _ -> error "Only variables can be assigned to"
+            -- Term
+            _ -> (termTree, toks')
 
 term :: [Token] -> (Tree, [Token])
-term = undefined
+term toks =
+    let (facTree, toks') = factor toks
+    in
+        case lookAhead toks' of
+            (TokenOperator op) | elem op [Times, Div] ->
+                let (termTree, toks'') = term (accept toks')
+                in (ProductNode op facTree termTree, toks'')
+            _ -> (facTree, toks')
 
 factor :: [Token] -> (Tree, [Token])
-factor = undefined
+factor toks =
+    case lookAhead toks of
+        (TokenNumber x) -> (NumberNode x, accept toks)
+        (TokenIdentifier str) -> (VariableNode str, accept toks)
+        (TokenOperator op) | elem op [Plus, Minus] ->
+            let (facTree, toks') = factor (accept toks)
+            in (UnaryNode op facTree, toks')
+        TokenLeftParen ->
+            let (expTree, toks') = expression (accept toks)
+            in 
+                if lookAhead toks' /= TokenRightParen
+                then error "Missing right parenthesis"
+                else (expTree, accept toks')
+        _ -> error $ "Parse error on token: " ++ show toks
 
-parse :: [Token] -> Expression
-parse = undefined
+parse :: [Token] -> Tree
+parse toks = let (tree, toks') = expression toks
+                    in
+                        if null toks'
+                        then tree
+                        else error $ "Leftover tokens: " ++ show toks'
 
-evaluate :: Expression -> Double
-evaluate = undefined
+--evaluate :: Expression -> Double
+--evaluate = undefined
 
 
 main :: IO ()
-main = do
-    print $ tokenize " 1 + 4 / x"
-    putStrLn ""
-    print $ tokenize "2+2+2*x+1"
-    putStrLn ""
-    print $ tokenize "12 + 24 / x1"
-    putStrLn ""
+main = (print . parse . tokenize) "x1 = -15 / (2 + x2)"
+
+-- Output:
+-- AssignmentNode "x1"
+--     (ProductNode Div
+--         (UnaryNode Minus
+--             (NumberNode 15.0))
+--         (SumNode Plus
+--             (NumberNode 2.0)
+--             (VariableNode "x2")))
