@@ -9,6 +9,7 @@ import Evaluator --(evaluate)
 
 
 main = do
+    print "Calc > "
     loop (DataMap.fromList [("pi", pi), ("e", exp 1.0)])
 
 loop symbolTable = do
