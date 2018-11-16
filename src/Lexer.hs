@@ -43,10 +43,10 @@ accept (_:ts) = ts
 
 operator :: Char -> Operator
 operator c | c == '+'  = Plus
-            | c == '-'  = Minus
-            | c == '*'  = Times
-            | c == '/'  = Div
-            | otherwise = error "Other operator"
+           | c == '-'  = Minus
+           | c == '*'  = Times
+           | c == '/'  = Div
+           | otherwise = error "Other operator"
 
 number :: Char -> String -> [Token]
 number c cs = 

@@ -9,7 +9,7 @@ import Evaluator --(evaluate)
 
 
 main = do
-    print "Calc > "
+    print "Welcome to SymCalc."
     loop (DataMap.fromList [("pi", pi), ("e", exp 1.0)])
 
 loop symbolTable = do
